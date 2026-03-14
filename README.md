@@ -1,6 +1,6 @@
 # 奇源情报局 (HvH 黑红榜)
 
-[中文版本](#intelligence-agency-hvh-blacklist)
+[English version](#intelligence-agency-hvh-blacklist)
 
 **作者**：可乐\
 **开源网址**：https://github.com/kelegegeNB/hvh-
