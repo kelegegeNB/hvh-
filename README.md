@@ -3,7 +3,7 @@
 [中文版本](#intelligence-agency-hvh-blacklist)
 
 **作者**：可乐\
-**开源网址**：<(https://github.com/kelegegeNB/hvh-)>
+**开源网址**：https://github.com/kelegegeNB/hvh-
 
 ## 📖 网站介绍
 
