@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: hvh
+      POSTGRES_PASSWORD: hvh_password
+      POSTGRES_DB: hvh_blacklist
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://hvh:hvh_password@db:5432/hvh_blacklist}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_KEY: ${ADMIN_KEY}
+      PORT: ${BACKEND_PORT:-3001}
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "${BACKEND_BIND:-3001:3001}"
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_BIND:-8080:80}"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads_data:

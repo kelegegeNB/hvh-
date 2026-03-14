@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MOD
+  USER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  role      Role     @default(USER)
+  passwordHash String?
+  status    String   @default("active")
+  violationCount Int      @default(0)
+  banExpires DateTime?
+  deviceFingerprint String?
+  createdAt DateTime @default(now())
+  reports   Report[] @relation("UserReports")
+  comments  Comment[]
+  ratings   Rating[]
+}
+
+model Report {
+  id         String      @id @default(cuid())
+  title      String
+  content    String
+  targetName String
+  targetId   String?
+  platform   String
+  status     String      @default("pending")
+  scoreAvg   Float       @default(0)
+  sortOrder  Int         @default(0)
+  publisherIp String?
+  isHidden   Boolean     @default(false)
+  trafficVolume Int      @default(0)
+  hotScore   Float       @default(0)
+  createdAt  DateTime    @default(now())
+  createdBy  User        @relation("UserReports", fields: [createdById], references: [id])
+  createdById String
+  evidences  Evidence[]
+  comments   Comment[]
+  ratings    Rating[]
+  viewLogs   ExposureViewLog[]
+  complaints ExposureComplaint[]
+
+  @@index([hotScore])
+}
+
+model IpDailyLimit {
+  id             String   @id @default(cuid())
+  ipAddress      String   @unique
+  exposureCount  Int      @default(0)
+  commentCount   Int      @default(0)
+  complaintCount Int      @default(0)
+  resetDate      DateTime
+  updatedAt      DateTime @updatedAt
+}
+
+model ExposureViewLog {
+  id          String   @id @default(cuid())
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId    String
+  viewerIp    String
+  viewTime    DateTime @default(now())
+  userAgent   String?
+  deviceType  String?
+  os          String?
+  browser     String?
+}
+
+model ExposureComplaint {
+  id            String   @id @default(cuid())
+  report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId      String
+  title         String
+  description   String
+  contact       String
+  images        String // JSON string array
+  complainantIp String
+  status        String   @default("pending")
+  result        String?
+  handledBy     String?
+  handledAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Evidence {
+  id        String   @id @default(cuid())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+  url       String
+  type      String
+  createdAt DateTime @default(now())
+}
+
+model IpBlacklist {
+  id        String   @id @default(cuid())
+  ip        String   @unique
+  reason    String
+  startAt   DateTime @default(now())
+  endAt     DateTime? // Null means permanent
+  message   String?
+  status    String   @default("active") // active, inactive
+  adminId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Appeal {
+  id        String   @id @default(cuid())
+  ip        String
+  content   String
+  contact   String
+  status    String   @default("pending") // pending, approved, rejected
+  handledBy String?
+  reply     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Platform {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  attachments CommentAttachment[]
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  score     Int
+  createdAt DateTime @default(now())
+}
+
+model CommentAttachment {
+  id        String   @id @default(cuid())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+  url       String
+  type      String
+  createdAt DateTime @default(now())
+}
+
+model Ad {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  linkUrl   String
+  position  String
+  startAt   DateTime
+  endAt     DateTime
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model MusicLink {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model RateLimitEvent {
+  id        String   @id @default(cuid())
+  ip        String
+  createdAt DateTime @default(now())
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model OperationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  username  String
+  action    String   // e.g. "update_config", "delete_report"
+  details   String   // JSON string or description
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+model UserLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  username  String?
+  action    String
+  details   String?
+  ip        String
+  device    String?
+  reportId  String?
+  createdAt DateTime @default(now())
+}
